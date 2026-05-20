@@ -1,0 +1,30 @@
+# Secretos
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Entornos virtuales (usamos conda env ARIA-Scraper-Lombardo-Car)
+venv/
+.venv/
+env/
+
+# Salidas del scraper / debug
+out/
+*.log
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Playwright
+playwright-report/
+test-results/

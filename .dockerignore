@@ -1,0 +1,48 @@
+# Secretos — nunca copiar al contenedor
+.env
+.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Entornos virtuales — usamos pip install dentro del contenedor
+venv/
+.venv/
+env/
+
+# Salidas del scraper local (cookies, probes, dumps)
+out/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Playwright artifacts (no aplica en este contenedor)
+playwright-report/
+test-results/
+
+# Documentación que no necesita ir al contenedor
+README.md
+supabase_schema.md
+
+# Scripts que no se ejecutan en este contenedor (scraper + probes + smoke tests)
+copart_probe.py
+copart_probe_v2.py
+copart_probe_v3.py
+copart_pagination_probe.py
+copart_filter_probe.py
+copart_wy_probe.py
+copart_depth_probe.py
+copart_diag_403.py
+iaai_*.py
+smoke_test_*.py
+normalize_brands.py

@@ -105,56 +105,70 @@ tab_chat, tab_data = st.tabs(["💬 Chat con el asistente", "📊 Inventario y d
 with tab_chat:
     if not os.environ.get("OPENAI_API_KEY"):
         st.error(
-            "Falta `OPENAI_API_KEY` en el archivo `.env`. "
-            "Pegá tu clave y reiniciá Streamlit para activar el chat."
+            "Falta `OPENAI_API_KEY` en las variables de entorno. "
+            "Configurala y reiniciá la app para activar el chat."
         )
     else:
         # Imports diferidos para no romper si falta la key
         from agent import run_agent
 
-        # Historia conversacional persistente en la sesión
         if "chat_history" not in st.session_state:
             st.session_state.chat_history = []
 
-        # Render del historial
-        for msg in st.session_state.chat_history:
-            with st.chat_message(msg["role"]):
-                st.markdown(msg["content"])
+        # Header con descripción + botón limpiar siempre visible arriba
+        header_left, header_right = st.columns([5, 1])
+        with header_left:
+            st.markdown(
+                "**Pregúntale al asistente** por vehículos del inventario. "
+                "Ej: marca, modelo, año, estado, presupuesto."
+            )
+        with header_right:
+            if st.session_state.chat_history:
+                if st.button("🗑️ Limpiar", use_container_width=True):
+                    st.session_state.chat_history = []
+                    st.rerun()
 
-        # Input
+        # Container scrolleable de altura fija (los mensajes scrollean dentro)
+        chat_container = st.container(height=520, border=True)
+
+        # Input SIEMPRE visible al pie del tab (no se desplaza con los mensajes)
         user_input = st.chat_input("Ej: Quiero un Hyundai Tucson 2020 económico en Florida")
-        if user_input:
-            # Mostrar mensaje del usuario
-            with st.chat_message("user"):
-                st.markdown(user_input)
-            st.session_state.chat_history.append({"role": "user", "content": user_input})
 
-            # Llamar al agente
-            with st.chat_message("assistant"):
-                with st.spinner("Buscando en el inventario..."):
-                    try:
-                        result = run_agent(
-                            user_input,
-                            history=st.session_state.chat_history[:-1],  # sin el último que ya empujamos
-                        )
-                        st.markdown(result["reply"])
+        # Render del historial dentro del container scrolleable
+        with chat_container:
+            for msg in st.session_state.chat_history:
+                with st.chat_message(msg["role"]):
+                    st.markdown(msg["content"])
+                    if msg.get("tool_calls"):
+                        with st.expander("🔧 Tools que usó el agente"):
+                            for tc in msg["tool_calls"]:
+                                st.code(f"{tc['name']}({tc['args']})", language="python")
 
-                        # Mostrar tools usadas (debug útil para Lombardo)
-                        if result["tool_calls"]:
-                            with st.expander("🔧 Tools que usó el agente"):
-                                for tc in result["tool_calls"]:
-                                    st.code(f"{tc['name']}({tc['args']})", language="python")
+            # Procesar el input nuevo INLINE en el container (para que se vea ya)
+            if user_input:
+                st.session_state.chat_history.append({"role": "user", "content": user_input})
+                with st.chat_message("user"):
+                    st.markdown(user_input)
 
-                        st.session_state.chat_history.append(
-                            {"role": "assistant", "content": result["reply"]}
-                        )
-                    except Exception as e:
-                        st.error(f"Error al invocar el agente: {type(e).__name__}: {e}")
-
-        if st.session_state.chat_history:
-            if st.button("🗑️ Limpiar conversación"):
-                st.session_state.chat_history = []
-                st.rerun()
+                with st.chat_message("assistant"):
+                    with st.spinner("Buscando en el inventario..."):
+                        try:
+                            result = run_agent(
+                                user_input,
+                                history=st.session_state.chat_history[:-1],
+                            )
+                            st.markdown(result["reply"])
+                            if result["tool_calls"]:
+                                with st.expander("🔧 Tools que usó el agente"):
+                                    for tc in result["tool_calls"]:
+                                        st.code(f"{tc['name']}({tc['args']})", language="python")
+                            st.session_state.chat_history.append({
+                                "role": "assistant",
+                                "content": result["reply"],
+                                "tool_calls": result["tool_calls"],
+                            })
+                        except Exception as e:
+                            st.error(f"Error al invocar el agente: {type(e).__name__}: {e}")
 
 
 # ────────────── Tab DATA ──────────────
